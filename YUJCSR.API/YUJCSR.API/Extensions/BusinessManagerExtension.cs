@@ -12,7 +12,8 @@ namespace YUJCSR.API.Extensions
             services.AddScoped<IProjectBusinessManager, ProjectBusinessManager>();
             services.AddScoped<IUNSDGBusinessManager, UNSDGBusinessManager>();
             services.AddScoped<IImpactBusinessManager, ImpactBusinessManager>();
-
+            services.AddScoped<ICompanyBusinessManager, CompanyBusinessManager>();
+            
             return services;
 
         }

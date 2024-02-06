@@ -27,9 +27,10 @@ namespace YUJCSR.Infrastructure
             model.Entity<ProjectUNSDGMappingModel>().ToTable("ProjectUNSGDMapping");
             model.Entity<ImpactMasterModel>().ToTable("ImpactMaster");
             model.Entity<ProjectImpactModel>().ToTable("ProjectImpactMapping");
-            
-
-
+            model.Entity<CompanyModel>().ToTable("companymaster");
+            model.Entity<CSODocModel>().ToTable("CSODocs");
+            model.Entity<ProjectCompanyMappingModel>().ToTable("ProjectCompanyMapping");
+            model.Entity<ProjectDocModel>().ToTable("ProjectDocs");
             //model.Entity<TenantLoginHistoryModel>().ToTable("TenantLoginHistory");
             //model.Entity<ExamMasterModel>().ToTable("ExamMaster");
             //model.Entity<ExamSetModel>().ToTable("ExamSet");
