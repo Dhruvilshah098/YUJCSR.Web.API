@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace YUJCSR.Infrastructure.Model
+namespace YUJCSR.Domain.Request
 {
-    public class ProjectDocModel : ModelBase
+    public class ProjectDocRequest :BaseRequest
     {
-        [Key]
         public string? DocID { get; set; }
         public string? ProjectID { get; set; }
         public string? DcoTypeID { get; set; }

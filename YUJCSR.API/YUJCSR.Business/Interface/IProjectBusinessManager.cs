@@ -44,6 +44,7 @@ namespace YUJCSR.Business.Interface
         Task<APIResponse> GetProjectImapctMappingList(string projectid, CancellationToken cancellationToken);
         Task<APIResponse> GetProjectImpactMappingById(string milestoneid, CancellationToken cancellationToken);
         #endregion
-        Task<APIResponse> UploadProjectPhoto(string milestoneid,string projectid, IFormFile file, CancellationToken cancellationToken);
+        Task<APIResponse> UploadProjectPhoto(string milestoneid,string projectid, string doctypeid, IFormFile file, CancellationToken cancellationToken);
+        Task<APIResponse> UploadProjectDocument(string projectid, string doctypeid, IFormFile file, CancellationToken cancellationToken);
     }
 }

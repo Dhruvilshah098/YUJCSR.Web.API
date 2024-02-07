@@ -14,7 +14,7 @@ namespace YUJCSR.API.Controllers
         private readonly IProjectBusinessManager _projectBusinessManager;
         private readonly IHttpHelper _httpHelper;
         public readonly ILogger<ProjectController> _logger;
-       
+
         private readonly IConfiguration configuration;
         public ProjectController(IProjectBusinessManager projectBusinessManager, IHttpHelper httpHelper,
             IConfiguration config, ILogger<ProjectController> logger)
@@ -23,7 +23,7 @@ namespace YUJCSR.API.Controllers
             _httpHelper = httpHelper;
             _logger = logger;
             configuration = config;
-            
+
         }
 
         [HttpPost()]
@@ -45,7 +45,7 @@ namespace YUJCSR.API.Controllers
             var response = await _projectBusinessManager.GetProjectList(cancellationtoken);
             return new OkObjectResult(response);
         }
-        
+
         [HttpGet("{projectid}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(APIResponse))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(APIResponse))]
@@ -225,17 +225,17 @@ namespace YUJCSR.API.Controllers
         #endregion
         #region "Photo Upload"
         [HttpPost("milestone/{milestoneid}/photo")]
-       // [Consumes("application/json", "multipart/form-data")]
+        // [Consumes("application/json", "multipart/form-data")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(APIResponse))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(APIResponse))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(APIResponse))]
-        public async Task<IActionResult> UploadMilestonePhoto(string milestoneid,string projectid, IFormFile photo, CancellationToken cancellationtoken)
+        public async Task<IActionResult> UploadMilestonePhoto(string milestoneid, string projectid, string doctypeid, IFormFile photo, CancellationToken cancellationtoken)
         {
 
             try
             {
-                _projectBusinessManager.UploadProjectPhoto(milestoneid, projectid, photo, cancellationtoken);
-             
+                _projectBusinessManager.UploadProjectPhoto(milestoneid, projectid, doctypeid, photo, cancellationtoken);
+
             }
             catch (Exception ex)
             {
@@ -248,7 +248,29 @@ namespace YUJCSR.API.Controllers
                 return new BadRequestObjectResult("Invalid paramer");
             }
             //var response = await _projectBusinessManager.UpdateProjectCSOMapping(mappingid, request, cancellationtoken);
-            return _httpHelper.HandleResponse(new APIResponse(200) {Status=true, Message="Photo uploaded" });
+            return _httpHelper.HandleResponse(new APIResponse(200) { Status = true, Message = "Photo uploaded" });
+        }
+        [HttpPost("project/{projectid}/photo")]
+        // [Consumes("application/json", "multipart/form-data")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(APIResponse))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(APIResponse))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(APIResponse))]
+        public async Task<IActionResult> UploadProjectPhoto(string projectid, string doctypeid, IFormFile photo, CancellationToken cancellationtoken)
+        {
+
+            try
+            {
+                _projectBusinessManager.UploadProjectDocument(projectid, doctypeid, photo, cancellationtoken);
+
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
+
+            //var response = await _projectBusinessManager.UpdateProjectCSOMapping(mappingid, request, cancellationtoken);
+            return _httpHelper.HandleResponse(new APIResponse(200) { Status = true, Message = "Photo uploaded" });
         }
 
         #endregion
@@ -271,7 +293,7 @@ namespace YUJCSR.API.Controllers
             var response = await _projectBusinessManager.GetProjectUNSGDMappingList(projectid, cancellationtoken);
             return _httpHelper.HandleResponse(response);
         }
-        
+
         [HttpPost("UNSDG/{mappingid}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(APIResponse))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(APIResponse))]

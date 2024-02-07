@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using YUJCSR.API.Extensions;
 using YUJCSR.Infrastructure;
 
@@ -30,6 +31,13 @@ var app = builder.Build();
     app.UseSwaggerUI();
 //}
 
+app.UseFileServer(new FileServerOptions
+{
+    FileProvider = new PhysicalFileProvider(
+                          Path.Combine(Directory.GetCurrentDirectory(), "StaticFiles")),
+    RequestPath = "/StaticFiles",
+    EnableDefaultFiles = false
+});
 app.UseHttpsRedirection();
 
 app.UseAuthorization();

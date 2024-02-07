@@ -24,6 +24,8 @@ namespace YUJCSR.Business.Implementation
         private readonly IRepositoryBase<ProjectCSOMappingModel> _csoMappingRepository;
         private readonly IRepositoryBase<ProjectUNSDGMappingModel> _unsdgMappingRepository;
         private readonly IRepositoryBase<ProjectImpactModel> _impactMappingRepository;
+        private readonly IRepositoryBase<ProjectDocModel> _projectDocRepository;
+
         private readonly ILogger<ProjectBusinessManager> _logger;
         private APIResponse _response;
         private readonly IHttpContextAccessor _httpContextAccessor;
@@ -32,7 +34,7 @@ namespace YUJCSR.Business.Implementation
         #endregion
         public ProjectBusinessManager(IRepositoryBase<ProjectModel> baseRepository, IRepositoryBase<ProjectBudgetModel> budgetRepository,
                      IRepositoryBase<ProjectMilestoneModel> milestoneRepository, IRepositoryBase<ProjectCSOMappingModel> csoMappingRepository,
-                     IRepositoryBase<ProjectImpactModel> impactMappingRepository,
+                     IRepositoryBase<ProjectImpactModel> impactMappingRepository, IRepositoryBase<ProjectDocModel> projectDocRepository,
                             IRepositoryBase<ProjectUNSDGMappingModel> unsdgMappingRepository, ILogger<ProjectBusinessManager> logger, IHttpContextAccessor httpContextAccessor)
         {
             _baseRepository = baseRepository;
@@ -41,6 +43,7 @@ namespace YUJCSR.Business.Implementation
             _csoMappingRepository = csoMappingRepository;
             _unsdgMappingRepository = unsdgMappingRepository;
             _impactMappingRepository = impactMappingRepository;
+            _projectDocRepository = projectDocRepository;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
             _activityId = _httpContextAccessor.HttpContext.Request.Headers["X-ActivityID"];
@@ -51,7 +54,6 @@ namespace YUJCSR.Business.Implementation
             try
             {
                 var data = _baseRepository.FindByCondition(a => a.ProjectID == projectId).FirstOrDefault();
-
                 _response = new SuccessResponse(data, SuccessMessage.Record_Found_Message);//: new ErrorResponse(500, "internal server error", "");
                 _response.Status = true;
 
@@ -64,7 +66,6 @@ namespace YUJCSR.Business.Implementation
 
             return _response;
         }
-
         public async Task<List<ProjectRequest>> GetProjectList(CancellationToken cancellationToken)
         {
             var data = new List<ProjectRequest>();
@@ -105,7 +106,6 @@ namespace YUJCSR.Business.Implementation
             }
             return data;
         }
-
         public async Task<APIResponse> SaveProject(ProjectRequest request, CancellationToken cancellationToken)
         {
             try
@@ -146,7 +146,6 @@ namespace YUJCSR.Business.Implementation
 
             return _response;
         }
-
         public async Task<APIResponse> UpdateProject(string projectId, ProjectRequest request, CancellationToken cancellationToken)
         {
             try
@@ -184,8 +183,7 @@ namespace YUJCSR.Business.Implementation
             }
             return _response;
         }
-
-
+       
         #region "ProjectBudget"
         public async Task<APIResponse> SaveProjectBudget(string projectid, ProjectBudgetRequest request, CancellationToken cancellationToken)
         {
@@ -469,7 +467,7 @@ namespace YUJCSR.Business.Implementation
             return _response;
         }
 
-        public async Task<APIResponse> UploadProjectPhoto(string milestoneid, string projectid, IFormFile photo, CancellationToken cancellationToken)
+        public async Task<APIResponse> UploadProjectPhoto(string milestoneid, string projectid, string doctypeid, IFormFile photo, CancellationToken cancellationToken)
         {
             try
             {
@@ -480,13 +478,17 @@ namespace YUJCSR.Business.Implementation
                     return new APIResponse(400, "Milestone not valid");
                 }
                 #endregion
+                #region "Photo Upload DB"
 
+
+                #endregion
                 #region "Physical Save"
                 if (photo != null && photo.Length > 0)
                 {
                     #region "Check and Create Project path"
-                    //Folder structure  - ProjectID- > MilestoneID -> fileName
-                    string projectPath = Path.Combine(photoUploadPath, projectid);
+                    //Folder structure  - PROJECT_DOCS -> ProjectID- > Milestones -> MilestoneID -> fileName
+                    string milestonesPath = Path.Combine(photoUploadPath, "MILESTONES");
+                    string projectPath = Path.Combine(milestonesPath, projectid);
                     if (!Directory.Exists(projectPath))
                     {
                         Directory.CreateDirectory(projectPath);
@@ -498,8 +500,6 @@ namespace YUJCSR.Business.Implementation
                     }
                     #endregion
 
-
-
                     string photoExtension = Path.GetExtension(photo.FileName);
                     string SystemFileName = Guid.NewGuid().ToString() + photoExtension;
                     string originalFileName = photo.FileName;
@@ -509,9 +509,24 @@ namespace YUJCSR.Business.Implementation
                     {
                         photo.CopyTo(newstream);
                     }
+                    #region "DB Save"
+                    _projectDocRepository.Save(new ProjectDocModel
+                    {
+                        ActiveStatus = true,
+                        CreatedBy = "system",
+                        DcoTypeID = doctypeid,
+                        DocID = Guid.NewGuid().ToString(),
+                        FileExtension = photoExtension,
+                        ModifiedBy = "system",
+                        OriginalFileName = originalFileName,
+                        ProjectID = projectid,
+                        SystemFileName = SystemFileName
+                    });
+                    #endregion
 
                 }
                 #endregion
+
                 _response = new SuccessResponse("Photo uploaded", SuccessMessage.Record_Found_Message);//: new ErrorResponse(500, "internal server error", "");
                 _response.Status = true;
             }
@@ -526,7 +541,6 @@ namespace YUJCSR.Business.Implementation
 
 
         #endregion
-
         #region "Project UNSDG "
         public async Task<APIResponse> SaveProjectUNSGDMapping(string projectid, ProjectUNSDGMappingRequest request, CancellationToken cancellationToken)
         {
@@ -596,7 +610,6 @@ namespace YUJCSR.Business.Implementation
             return _response;
         }
         #endregion
-
         #region "Project Imapct Mapping"
         public async Task<APIResponse> SaveProjectImapctMapping(string projectid, ProjectImapctMappingRequest request, CancellationToken cancellationToken)
         {
@@ -690,6 +703,73 @@ namespace YUJCSR.Business.Implementation
                 _response = new ErrorResponse(500, ErrorMessage.Save_Message, ErrorType.ServerError);
             }
 
+            return _response;
+        }
+
+        public async Task<APIResponse> UploadProjectDocument(string projectid, string doctypeid, IFormFile file, CancellationToken cancellationToken)
+        {
+            try
+            {
+                #region "Data validation"
+                var milestone = _baseRepository.FindByCondition(a => a.ProjectID == projectid).FirstOrDefault();
+                if (milestone == null)
+                {
+                    return new APIResponse(400, "projectid not valid");
+                }
+                #endregion
+                #region "Photo Upload DB"
+
+
+                #endregion
+                #region "Physical Save"
+                if (file != null && file.Length > 0)
+                {
+                    #region "Check and Create Project path"
+                    //Folder structure  - PROJECT_DOCS -> ProjectID -> fileName
+                    string projectPath = Path.Combine(photoUploadPath, projectid);
+                    if (!Directory.Exists(projectPath))
+                    {
+                        Directory.CreateDirectory(projectPath);
+                    }                   
+                    #endregion
+
+                    string photoExtension = Path.GetExtension(file.FileName);
+                    string SystemFileName = Guid.NewGuid().ToString() + photoExtension;
+                    string originalFileName = file.FileName;
+
+                    string fullPath = Path.Combine(projectPath, SystemFileName);
+                    string absPath = Path.Combine("PROJECT_DOCS", projectid,SystemFileName);
+                    using (var newstream = new FileStream(fullPath, FileMode.Create))
+                    {
+                        file.CopyTo(newstream);
+                    }
+                    #region "DB Save"
+                    _projectDocRepository.Save(new ProjectDocModel
+                    {
+                        ActiveStatus = true,
+                        CreatedBy = "system",
+                        DcoTypeID = doctypeid,
+                        DocID = Guid.NewGuid().ToString(),
+                        FileExtension = photoExtension,
+                        ModifiedBy = "system",
+                        OriginalFileName = originalFileName,
+                        ProjectID = projectid,
+                        SystemFileName = SystemFileName,
+                        FilePath = absPath
+                    }); ;
+                    #endregion
+
+                }
+                #endregion
+
+                _response = new SuccessResponse("Photo uploaded", SuccessMessage.Record_Found_Message);//: new ErrorResponse(500, "internal server error", "");
+                _response.Status = true;
+            }
+            catch (Exception ex)
+            {
+
+
+            }
             return _response;
         }
         #endregion
